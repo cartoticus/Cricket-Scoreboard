@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Cricket Scoreboard</title>
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="Two-player darts Cricket scoreboard that works offline">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--card2:#334155;--text:#f1f5f9;--muted:#94a3b8;--p1:#38bdf8;--p2:#f97316;--win:#22c55e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Roboto,sans-serif;height:100%}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)}
+.top{display:grid;grid-template-columns:1fr 70px 1fr;gap:6px;padding:10px 0 6px;align-items:stretch}
+.pl{background:var(--card);border-radius:14px;padding:8px 6px;text-align:center;border:2px solid transparent;position:relative}
+.pl.turn{border-color:currentColor}
+.pl.p1{color:var(--p1)}.pl.p2{color:var(--p2)}
+.pl .nm{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl .sc{font-size:44px;font-weight:800;color:var(--text);line-height:1.05;font-variant-numeric:tabular-nums}
+.pl .wn{font-size:12px;color:var(--muted)}
+.mid{display:flex;flex-direction:column;justify-content:center;align-items:center;color:var(--muted);font-size:12px;gap:4px}
+.mid button{background:var(--card);border:0;color:var(--text);border-radius:10px;padding:8px 0;width:100%;font-size:13px;font-weight:600}
+.board{flex:1;display:grid;grid-template-rows:repeat(7,1fr);gap:6px;min-height:0;padding-bottom:6px}
+.row{display:grid;grid-template-columns:1fr 70px 1fr;gap:6px}
+.cell{background:var(--card);border:0;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text);position:relative}
+.cell:active{background:var(--card2)}
+.cell svg{width:46px;height:46px}
+.num{display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;border-radius:12px}
+.row.dead .num{color:var(--card2);text-decoration:line-through}
+.row.dead .cell{opacity:.35}
+.flash{position:absolute;right:8px;top:6px;font-size:13px;font-weight:700;color:var(--win)}
+.bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:6px 0 10px}
+.bar button{border:0;border-radius:12px;padding:14px 0;font-size:15px;font-weight:700;background:var(--card);color:var(--text)}
+.bar .next{background:var(--win);color:#052e16}
+dialog{background:var(--card);color:var(--text);border:0;border-radius:18px;width:min(90vw,380px);padding:20px;text-align:center}
+dialog::backdrop{background:#000b}
+dialog h2{margin:0 0 6px;font-size:26px}
+dialog p{color:var(--muted);margin:0 0 16px;white-space:pre-line;line-height:1.5}
+dialog input{width:100%;padding:12px;border-radius:10px;border:0;background:var(--card2);color:var(--text);font-size:18px;margin-bottom:10px;user-select:text;-webkit-user-select:text}
+dialog .btns{display:flex;gap:8px}
+dialog button{flex:1;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:700;background:var(--card2);color:var(--text)}
+dialog button.go{background:var(--win);color:#052e16}
+dialog select{width:100%;padding:12px;border-radius:10px;border:0;background:var(--card2);color:var(--text);font-size:18px;margin-bottom:14px}
+dialog label{display:block;text-align:left;font-size:13px;color:var(--muted);margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="pl p1" id="pl0"><div class="nm"></div><div class="sc"></div><div class="wn"></div></div>
+  <div class="mid"><button id="namesBtn">Settings</button><span id="roundInfo" style="font-weight:700;color:var(--text);font-size:14px;white-space:nowrap"></span><span id="dartInfo">Darts: 0/3</span></div>
+  <div class="pl p2" id="pl1"><div class="nm"></div><div class="sc"></div><div class="wn"></div></div>
+</div>
+<main class="board" id="board"></main>
+<div class="bar">
+  <button id="undoBtn">Undo</button>
+  <button id="nextBtn" class="next">Next turn</button>
+  <button id="newBtn">New game</button>
+</div>
+
+<dialog id="winDlg">
+  <h2 id="winTitle">Winner!</h2>
+  <p id="winSub"></p>
+  <div class="btns"><button id="winUndo">Undo last</button><button class="go" id="rematch">Rematch</button></div>
+</dialog>
+
+<dialog id="namesDlg">
+  <h2 style="font-size:20px;margin-bottom:12px">Settings</h2>
+  <label>Player 1</label><input id="n0" maxlength="16">
+  <label>Player 2</label><input id="n1" maxlength="16">
+  <label>Round limit</label><select id="limitSel"><option value="0">Off</option><option value="15">15 rounds</option><option value="20">20 rounds</option><option value="25">25 rounds</option></select>
+  <div class="btns"><button id="resetWins">Reset wins</button><button class="go" id="saveNames">Save</button></div>
+</dialog>
+
+<script>
+const KEY='cricket-v1', NUMS=[20,19,18,17,16,15,25];
+const fresh=()=>({marks:[{},{}],score:[0,0],turn:S?S.starter:0,darts:0,turns:0,stack:[],over:false});
+let S=null;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.names){S={names:['Player 1','Player 2'],wins:[0,0],starter:0};Object.assign(S,fresh())}
+if(S.limit===undefined)S.limit=20;
+if(S.turns===undefined)S.turns=0;
+const totalMarks=p=>NUMS.reduce((t,n)=>t+Math.min(m(p,n),3),0);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const m=(p,n)=>S.marks[p][n]||0;
+const closedAll=p=>NUMS.every(n=>m(p,n)>=3);
+
+const svg={
+  1:'<svg viewBox="0 0 40 40"><line x1="10" y1="32" x2="30" y2="8" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>',
+  2:'<svg viewBox="0 0 40 40"><g stroke="currentColor" stroke-width="5" stroke-linecap="round"><line x1="10" y1="32" x2="30" y2="8"/><line x1="10" y1="8" x2="30" y2="32"/></g></svg>',
+  3:'<svg viewBox="0 0 40 40"><g stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"><circle cx="20" cy="20" r="16"/><line x1="12" y1="28" x2="28" y2="12"/><line x1="12" y1="12" x2="28" y2="28"/></g></svg>'
+};
+
+function buildBoard(){
+  const b=$('board');b.innerHTML='';
+  NUMS.forEach(n=>{
+    const r=document.createElement('div');r.className='row';r.dataset.n=n;
+    r.innerHTML=`<button class="cell" data-p="0" style="color:var(--p1)"></button><div class="num">${n===25?'B':n}</div><button class="cell" data-p="1" style="color:var(--p2)"></button>`;
+    r.querySelectorAll('.cell').forEach(c=>c.onclick=()=>hit(+c.dataset.p,n,c));
+    b.appendChild(r);
+  });
+}
+
+function render(){
+  [0,1].forEach(p=>{
+    const el=$('pl'+p);
+    el.querySelector('.nm').textContent=S.names[p];
+    el.querySelector('.sc').textContent=S.score[p];
+    el.querySelector('.wn').textContent=`Wins: ${S.wins[p]}`;
+    el.classList.toggle('turn',S.turn===p&&!S.over);
+  });
+  document.querySelectorAll('.row').forEach(r=>{
+    const n=+r.dataset.n;
+    r.classList.toggle('dead',m(0,n)>=3&&m(1,n)>=3);
+    r.querySelectorAll('.cell').forEach(c=>{const v=Math.min(m(+c.dataset.p,n),3);c.innerHTML=v?svg[v]:''});
+  });
+  $('dartInfo').textContent=`Darts: ${S.darts}/3`;
+  $('roundInfo').textContent=S.limit?`Rd ${Math.min(Math.floor(S.turns/2)+1,S.limit)}/${S.limit}`:'';
+}
+
+function hit(p,n,cell){
+  if(S.over)return;
+  const o=1-p;
+  if(m(p,n)>=3&&m(o,n)>=3){buzz(60);return}
+  if(!switchTo(p))return;
+  let pts=0;
+  if(m(p,n)<3)S.marks[p][n]=m(p,n)+1;
+  else{pts=n;S.score[p]+=pts}
+  S.stack.push({p,n,pts,darts:S.darts});
+  S.darts=Math.min(S.darts+1,3);
+  buzz(15);
+  checkWin();save();render();
+  if(pts&&cell){const f=document.createElement('span');f.className='flash';f.textContent='+'+pts;cell.appendChild(f);setTimeout(()=>f.remove(),700)}
+}
+
+function checkWin(){
+  for(const p of [0,1]){
+    if(closedAll(p)&&S.score[p]>=S.score[1-p]){
+      showWin(p,'Closed out');return;
+    }
+  }
+}
+
+function showWin(p,how){
+  S.over=true;S.winner=p;
+  if(p>=0)S.wins[p]++;
+  $('winTitle').textContent=p>=0?`${S.names[p]} wins!`:'Dead even!';
+  $('winSub').textContent=p>=0?`${how}\n${S.score[0]} – ${S.score[1]}  ·  Series ${S.wins[0]}–${S.wins[1]}`:`Same points and marks after ${S.limit} rounds. Settle it with one dart each at the bull.`;
+  setTimeout(()=>$('winDlg').showModal(),250);
+  buzz([40,60,40]);
+}
+
+// Change thrower. Returns false if this ended the game on the round limit.
+function switchTo(p){
+  if(S.turn===p)return true;
+  S.stack.push({sw:true,turn:S.turn,darts:S.darts,turns:S.turns});
+  S.turn=p;S.darts=0;S.turns++;
+  if(S.limit&&S.turns>=S.limit*2){endByRounds();save();render();return false}
+  return true;
+}
+
+function endByRounds(){
+  const [a,b]=S.score;
+  if(a!==b)return showWin(a>b?0:1,`${S.limit} rounds, more points`);
+  const [ma,mb]=[totalMarks(0),totalMarks(1)];
+  if(ma!==mb)return showWin(ma>mb?0:1,`${S.limit} rounds, tied on points, more marks`);
+  showWin(-1);
+}
+
+function undo(){
+  const l=S.stack.pop();if(!l)return;
+  if(S.over){if(S.winner>=0)S.wins[S.winner]--;S.over=false}
+  if(l.sw){S.turn=l.turn;S.darts=l.darts;S.turns=l.turns}
+  else{if(l.pts)S.score[l.p]-=l.pts;else S.marks[l.p][l.n]=m(l.p,l.n)-1;S.darts=l.darts}
+  save();render();
+}
+
+function buzz(x){if(navigator.vibrate)navigator.vibrate(x)}
+
+$('undoBtn').onclick=undo;
+$('winUndo').onclick=()=>{$('winDlg').close();undo()};
+$('nextBtn').onclick=()=>{if(S.over)return;if(switchTo(1-S.turn)){save();render()}};
+$('newBtn').onclick=()=>{if(S.stack.length&&!S.over&&!confirm('Abandon this game and start over?'))return;newGame()};
+$('rematch').onclick=()=>{$('winDlg').close();newGame()};
+function newGame(){S.starter=1-S.starter;Object.assign(S,fresh());S.winner=undefined;save();render()}
+$('namesBtn').onclick=()=>{$('n0').value=S.names[0];$('n1').value=S.names[1];$('limitSel').value=S.limit;$('namesDlg').showModal()};
+$('saveNames').onclick=()=>{S.names=[$('n0').value.trim()||'Player 1',$('n1').value.trim()||'Player 2'];S.limit=+$('limitSel').value;if(S.limit&&!S.over&&S.turns>=S.limit*2)endByRounds();save();render();$('namesDlg').close()};
+$('resetWins').onclick=()=>{if(confirm('Reset the win tally?')){S.wins=[0,0];save();render()}};
+[0,1].forEach(p=>$('pl'+p).onclick=()=>{if(!S.over&&switchTo(p)){save();render()}});
+
+buildBoard();render();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
+</script>
+</body>
+</html>
