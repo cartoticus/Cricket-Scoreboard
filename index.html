@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Cricket Scoreboard</title>
 <meta name="theme-color" content="#0f172a">
-<meta name="description" content="Two-player darts Cricket scoreboard that works offline">
+<meta name="description" content="Darts Cricket scoreboard with quick play and league mode, works offline">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -14,6 +14,8 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Roboto,sans-serif;height:100%}
 body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}
+.screen.on{display:flex}
 .top{display:grid;grid-template-columns:1fr 70px 1fr;gap:6px;padding:10px 0 6px;align-items:stretch}
 .pl{background:var(--card);border-radius:14px;padding:8px 6px;text-align:center;border:2px solid transparent;position:relative}
 .pl.turn{border-color:currentColor}
@@ -45,12 +47,95 @@ dialog button{flex:1;border:0;border-radius:12px;padding:13px;font-size:15px;fon
 dialog button.go{background:var(--win);color:#052e16}
 dialog select{width:100%;padding:12px;border-radius:10px;border:0;background:var(--card2);color:var(--text);font-size:18px;margin-bottom:14px}
 dialog label{display:block;text-align:left;font-size:13px;color:var(--muted);margin-bottom:4px}
+.scroll{flex:1;overflow-y:auto;padding:12px 2px 24px;-webkit-overflow-scrolling:touch}
+.hdr{display:flex;align-items:center;gap:10px;padding:12px 0 4px}
+.hdr h1{font-size:22px;margin:0;flex:1}
+.hdr button,.btn{background:var(--card);border:0;color:var(--text);border-radius:12px;padding:10px 14px;font-size:15px;font-weight:600}
+.btn.go{background:var(--win);color:#052e16}
+.btn.wide{width:100%;padding:15px;font-size:16px;font-weight:700}
+.btn.danger{color:#fca5a5}
+.home-title{text-align:center;padding:26px 0 16px}
+.home-title h1{margin:0;font-size:34px;letter-spacing:.5px}
+.home-title p{margin:4px 0 0;color:var(--muted)}
+.tile{display:block;width:100%;text-align:left;background:var(--card);border:0;color:var(--text);border-radius:16px;padding:16px;margin-bottom:10px}
+.tile b{display:block;font-size:18px}
+.tile span{color:var(--muted);font-size:14px}
+.tile.resume{background:#14532d;border:1px solid var(--win)}
+.tile.resume span{color:#bbf7d0}
+.field{margin-bottom:16px}
+.field>label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.seg{display:flex;background:var(--card);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;color:var(--muted);padding:11px 4px;border-radius:9px;font-size:15px;font-weight:700}
+.seg button.on{background:var(--card2);color:var(--text)}
+.sel,.txt{width:100%;padding:12px;border-radius:12px;border:0;background:var(--card);color:var(--text);font-size:17px;margin-bottom:6px;user-select:text;-webkit-user-select:text}
+.sidecol{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sidecol h3{margin:0 0 6px;font-size:14px}
+.list .item{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.list .item b{font-size:16px}
+.list .item .meta{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.45}
+.empty{color:var(--muted);text-align:center;padding:30px 10px;line-height:1.5}
+.sect{font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px}
+/* league game */
+.lg-top{display:grid;grid-template-columns:1fr 64px 1fr;gap:6px;padding:10px 0 6px}
+.lg-side{background:var(--card);border-radius:14px;padding:6px;text-align:center;border:2px solid transparent;min-width:0}
+.lg-side.s0{color:var(--p1)}.lg-side.s1{color:var(--p2)}
+.lg-side.turn{border-color:currentColor}
+.lg-names{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-names b{color:currentColor}
+.lg-side.s0 .lg-names b{color:var(--p1)}.lg-side.s1 .lg-names b{color:var(--p2)}
+.lg-score{font-size:36px;font-weight:800;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
+.lg-legs{font-size:13px;letter-spacing:3px}
+.lg-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;color:var(--muted)}
+.lg-mid button{background:var(--card);border:0;color:var(--text);border-radius:10px;padding:7px 0;width:100%;font-size:13px;font-weight:600}
+.lg-mid b{color:var(--text);font-size:14px}
+.lg-board{flex:1;display:grid;grid-template-rows:repeat(7,1fr);gap:5px;min-height:0}
+.lg-row{display:grid;grid-template-columns:46px 1fr 1fr 1fr 46px;gap:5px}
+.lg-mk{display:flex;align-items:center;justify-content:center;background:#172033;border-radius:10px}
+.lg-mk svg{width:30px;height:30px}
+.lg-mk[data-s="0"]{color:var(--p1)}.lg-mk[data-s="1"]{color:var(--p2)}
+.lg-row button{border:0;border-radius:10px;background:var(--card);color:var(--text);font-size:19px;font-weight:800;position:relative}
+.lg-row button[data-x="2"]{background:#26354d}
+.lg-row button[data-x="3"]{background:#2f3f5a}
+.lg-row button:active{filter:brightness(1.4)}
+.lg-row.score button{box-shadow:inset 0 0 0 2px #22c55e88}
+.lg-row.dead button,.lg-row.dead .lg-mk{opacity:.3}
+.lg-row button.hide{visibility:hidden}
+.lg-turn{display:flex;align-items:center;gap:6px;padding:8px 2px;font-size:14px;color:var(--muted);min-height:44px}
+.lg-turn b{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{background:var(--card);border-radius:8px;padding:4px 8px;font-weight:700;color:var(--text);min-width:40px;text-align:center}
+.chip.e{color:var(--card2)}
+.lg-turn .mpr{margin-left:auto;white-space:nowrap}
+.lg-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 0 10px}
+.lg-bar button{border:0;border-radius:12px;padding:14px 0;font-size:15px;font-weight:700;background:var(--card);color:var(--text)}
+.lg-bar .next{background:var(--win);color:#052e16}
+.toast{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);background:#000d;color:#fff;padding:12px 20px;border-radius:14px;font-size:20px;font-weight:800;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:9}
+.toast.on{opacity:1}
+.pop{position:absolute;right:4px;top:2px;font-size:12px;color:var(--win);font-weight:800}
+/* team card */
+.tscore{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;text-align:center;background:var(--card);border-radius:16px;padding:12px;margin-bottom:12px}
+.tscore .tn{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tscore .big{font-size:38px;font-weight:800;padding:0 12px}
+.game{background:var(--card);border-radius:14px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.game .gi{flex:1;min-width:0}
+.game .gt{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.game .gp{font-size:15px;margin-top:2px}
+.game .gr{font-size:13px;margin-top:3px;color:var(--win);font-weight:600}
+.game button{border:0;border-radius:10px;padding:10px 12px;font-weight:700;background:var(--card2);color:var(--text)}
+.game button.go{background:var(--win);color:#052e16}
+#askBtns{flex-direction:column}
+.stat{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 12px;text-align:left}
+.stat th{color:var(--muted);font-weight:600;font-size:12px;padding:4px}
+.stat td{padding:5px 4px;border-top:1px solid var(--card2)}
+.stat td:not(:first-child),.stat th:not(:first-child){text-align:right}
+#formBody{text-align:left;max-height:60vh;overflow:auto}
+
 </style>
 </head>
 <body>
+<section class="screen" id="quick">
 <div class="top">
   <div class="pl p1" id="pl0"><div class="nm"></div><div class="sc"></div><div class="wn"></div></div>
-  <div class="mid"><button id="namesBtn">Settings</button><span id="roundInfo" style="font-weight:700;color:var(--text);font-size:14px;white-space:nowrap"></span><span id="dartInfo">Darts: 0/3</span></div>
+  <div class="mid"><button id="namesBtn">Menu</button><span id="roundInfo" style="font-weight:700;color:var(--text);font-size:14px;white-space:nowrap"></span><span id="dartInfo">Darts: 0/3</span></div>
   <div class="pl p2" id="pl1"><div class="nm"></div><div class="sc"></div><div class="wn"></div></div>
 </div>
 <main class="board" id="board"></main>
@@ -59,6 +144,92 @@ dialog label{display:block;text-align:left;font-size:13px;color:var(--muted);mar
   <button id="nextBtn" class="next">Next turn</button>
   <button id="newBtn">New game</button>
 </div>
+</section>
+<section class="screen" id="home">
+  <div class="scroll">
+    <div class="home-title"><h1>🎯 Cricket</h1><p>Darts scoreboard</p></div>
+    <div id="resumeTiles"></div>
+    <button class="tile" id="goQuick"><b>Quick Play</b><span>Two players, tap the marks, play fast</span></button>
+    <button class="tile" id="goLeague"><b>League Match</b><span>Singles or doubles, every dart entered, legs and MPR</span></button>
+    <button class="tile" id="goTeam"><b>Team Night</b><span>4 vs 4 match card: 4 singles + 2 doubles</span></button>
+    <button class="tile" id="goPlayers"><b>Players &amp; Stats</b><span>Roster, lifetime MPR, backup</span></button>
+    <button class="tile" id="goHistory"><b>Match History</b><span>Past league matches and team nights</span></button>
+  </div>
+</section>
+
+<section class="screen" id="lgSetup">
+  <div class="hdr"><button data-home>‹ Back</button><h1>League Match</h1></div>
+  <div class="scroll">
+    <div class="field"><label>Format</label><div class="seg" data-k="type"><button data-v="singles">Singles</button><button data-v="doubles">Doubles</button></div></div>
+    <div class="field"><label>Players</label>
+      <div class="sidecol">
+        <div><h3 style="color:var(--p1)">Side A</h3><select class="sel" id="suA0"></select><select class="sel dbl" id="suA1"></select></div>
+        <div><h3 style="color:var(--p2)">Side B</h3><select class="sel" id="suB0"></select><select class="sel dbl" id="suB1"></select></div>
+      </div>
+    </div>
+    <div class="field"><label>Match length</label><div class="seg" data-k="toWin"><button data-v="1">1 leg</button><button data-v="2">Best of 3</button><button data-v="3">Best of 5</button></div></div>
+    <div class="field"><label>Round limit per leg</label><div class="seg" data-k="limit"><button data-v="0">Off</button><button data-v="15">15</button><button data-v="20">20</button><button data-v="25">25</button></div></div>
+    <div class="field"><label>Throws first (won the cork)</label><div class="seg" data-k="first"><button data-v="0">Side A</button><button data-v="1">Side B</button></div></div>
+    <button class="btn go wide" id="suStart">Start match</button>
+  </div>
+</section>
+
+<section class="screen" id="lgGame">
+  <div class="lg-top">
+    <div class="lg-side s0" id="lgS0"><div class="lg-names"></div><div class="lg-score"></div><div class="lg-legs"></div></div>
+    <div class="lg-mid"><button id="lgMenu">Menu</button><b id="lgLeg"></b><span id="lgRd"></span></div>
+    <div class="lg-side s1" id="lgS1"><div class="lg-names"></div><div class="lg-score"></div><div class="lg-legs"></div></div>
+  </div>
+  <div class="lg-board" id="lgBoard"></div>
+  <div class="lg-turn" id="lgTurn"></div>
+  <div class="lg-bar"><button id="lgUndo">Undo</button><button id="lgMiss">Miss</button><button id="lgEnd" class="next">End turn</button></div>
+</section>
+
+<section class="screen" id="teamSetup">
+  <div class="hdr"><button data-home>‹ Back</button><h1>Team Night</h1></div>
+  <div class="scroll">
+    <div class="sidecol">
+      <div><h3 style="color:var(--p1)">Home team</h3><input class="txt" id="tnA" placeholder="Team name" maxlength="20"><select class="sel" id="tA0"></select><select class="sel" id="tA1"></select><select class="sel" id="tA2"></select><select class="sel" id="tA3"></select></div>
+      <div><h3 style="color:var(--p2)">Away team</h3><input class="txt" id="tnB" placeholder="Team name" maxlength="20"><select class="sel" id="tB0"></select><select class="sel" id="tB1"></select><select class="sel" id="tB2"></select><select class="sel" id="tB3"></select></div>
+    </div>
+    <div class="field" style="margin-top:12px"><label>Each game</label><div class="seg" data-k="toWin"><button data-v="1">1 leg</button><button data-v="2">Best of 3</button><button data-v="3">Best of 5</button></div></div>
+    <div class="field"><label>Round limit per leg</label><div class="seg" data-k="limit"><button data-v="0">Off</button><button data-v="15">15</button><button data-v="20">20</button><button data-v="25">25</button></div></div>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Match card: 4 singles (1v1, 2v2, 3v3, 4v4) then 2 doubles (1&amp;2 vs 1&amp;2, 3&amp;4 vs 3&amp;4). You can change the players for any game before you play it.</p>
+    <button class="btn go wide" id="tnStart">Start team night</button>
+  </div>
+</section>
+
+<section class="screen" id="teamCard">
+  <div class="hdr"><button data-home>‹ Home</button><h1>Match Card</h1><button id="tcShare">Share</button></div>
+  <div class="scroll">
+    <div class="tscore"><div class="tn" id="tcA" style="color:var(--p1)"></div><div class="big" id="tcScore"></div><div class="tn" id="tcB" style="color:var(--p2)"></div></div>
+    <div id="tcGames"></div>
+    <button class="btn wide" id="tcFinish" style="margin-top:8px">Finish team night</button>
+  </div>
+</section>
+
+<section class="screen" id="players">
+  <div class="hdr"><button data-home>‹ Back</button><h1>Players</h1></div>
+  <div class="scroll">
+    <div style="display:flex;gap:8px"><input class="txt" id="newPlayer" placeholder="Add a player" maxlength="16" style="margin:0"><button class="btn go" id="addPlayer">Add</button></div>
+    <div class="sect">Lifetime stats (league matches)</div>
+    <div class="list" id="playerList"></div>
+    <div class="sect">Backup</div>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 10px">Your stats live only on this phone. Save a backup file now and then, and restore it if you switch phones or clear Chrome's data.</p>
+    <div class="sidecol"><button class="btn" id="exportBtn">Save backup</button><button class="btn" id="importBtn">Restore backup</button></div>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+  </div>
+</section>
+
+<section class="screen" id="history">
+  <div class="hdr"><button data-home>‹ Back</button><h1>History</h1></div>
+  <div class="scroll"><div class="list" id="histList"></div></div>
+</section>
+
+<dialog id="askDlg"><h2 id="askTitle" style="font-size:22px"></h2><p id="askSub"></p><div class="btns" id="askBtns"></div></dialog>
+<dialog id="formDlg"><h2 id="formTitle" style="font-size:20px;margin-bottom:12px"></h2><div id="formBody"></div><div class="btns" id="formBtns" style="margin-top:12px"></div></dialog>
+<div class="toast" id="toast"></div>
+
 
 <dialog id="winDlg">
   <h2 id="winTitle">Winner!</h2>
@@ -67,6 +238,7 @@ dialog label{display:block;text-align:left;font-size:13px;color:var(--muted);mar
 </dialog>
 
 <dialog id="namesDlg">
+  <button id="homeBtn" style="width:100%;margin-bottom:14px">⌂ Main menu</button>
   <h2 style="font-size:20px;margin-bottom:12px">Settings</h2>
   <label>Player 1</label><input id="n0" maxlength="16">
   <label>Player 2</label><input id="n1" maxlength="16">
@@ -112,7 +284,7 @@ function render(){
     el.querySelector('.wn').textContent=`Wins: ${S.wins[p]}`;
     el.classList.toggle('turn',S.turn===p&&!S.over);
   });
-  document.querySelectorAll('.row').forEach(r=>{
+  $('board').querySelectorAll('.row').forEach(r=>{
     const n=+r.dataset.n;
     r.classList.toggle('dead',m(0,n)>=3&&m(1,n)>=3);
     r.querySelectorAll('.cell').forEach(c=>{const v=Math.min(m(+c.dataset.p,n),3);c.innerHTML=v?svg[v]:''});
@@ -192,6 +364,423 @@ $('resetWins').onclick=()=>{if(confirm('Reset the win tally?')){S.wins=[0,0];sav
 [0,1].forEach(p=>$('pl'+p).onclick=()=>{if(!S.over&&switchTo(p)){save();render()}});
 
 buildBoard();render();
+/* ================= LEAGUE ================= */
+const LK='cricket-league-v1';
+let L=null;
+try{L=JSON.parse(localStorage.getItem(LK))}catch(e){}
+if(!L||!L.roster)L={roster:[],history:[],cur:null,team:null,nextId:1,set:{type:'singles',toWin:2,limit:20,first:0,sides:[[],[]]},tset:{toWin:2,limit:20}};
+const lsave=()=>{try{localStorage.setItem(LK,JSON.stringify(L))}catch(e){alert('Could not save. Phone storage may be full.')}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pname=id=>{const p=L.roster.find(p=>p.id===id);return p?p.name:'?'};
+const sideName=ids=>ids.map(pname).join(' & ');
+const fmtMpr=(m,t)=>t?(m/t).toFixed(2):'–';
+const dartLbl=d=>d.n?((d.n===25?(d.x===2?'DB':'SB'):(['','S','D','T'][d.x]+d.n))):'–';
+const newId=()=>L.nextId++;
+
+/* ---------- screens ---------- */
+const renderers={};
+function show(id){
+  clearTimeout(toastT);$('toast').classList.remove('on');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+  try{localStorage.setItem('cricket-screen',id)}catch(e){}
+  if(renderers[id])renderers[id]();
+}
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
+$('homeBtn').onclick=()=>{$('namesDlg').close();show('home')};
+$('goQuick').onclick=()=>show('quick');
+$('goLeague').onclick=()=>show('lgSetup');
+$('goTeam').onclick=()=>{if(L.team&&!confirm('A team night is already in progress. Start a new one? The current one stays in History.'))return;show('teamSetup')};
+$('goPlayers').onclick=()=>show('players');
+$('goHistory').onclick=()=>show('history');
+
+renderers.home=()=>{
+  let h='';
+  if(L.cur){const c=L.cur;h+=`<button class="tile resume" id="resLg"><b>▶ Resume match</b><span>${esc(sideName(c.sides[0]))} vs ${esc(sideName(c.sides[1]))}</span></button>`}
+  const t=teamRec();
+  if(t){const sc=teamScore(t);h+=`<button class="tile resume" id="resTeam"><b>▶ Team night in progress</b><span>${esc(t.names[0])} ${sc[0]} – ${sc[1]} ${esc(t.names[1])}</span></button>`}
+  $('resumeTiles').innerHTML=h;
+  if($('resLg'))$('resLg').onclick=()=>show('lgGame');
+  if($('resTeam'))$('resTeam').onclick=()=>show('teamCard');
+};
+
+/* ---------- generic dialogs ---------- */
+function ask(title,sub,buttons){
+  return new Promise(res=>{
+    const d=$('askDlg');$('askTitle').textContent=title;$('askSub').textContent=sub||'';
+    const box=$('askBtns');box.innerHTML='';let done=false;
+    const fin=i=>{if(done)return;done=true;if(d.open)d.close();res(i)};
+    buttons.forEach((b,i)=>{const e=document.createElement('button');e.textContent=b.label||b;if(b.go)e.className='go';e.onclick=()=>fin(i);box.appendChild(e)});
+    d.oncancel=e=>{e.preventDefault();if(buttons.cancel!==false)fin(-1)};
+    d.showModal();
+  });
+}
+function form(title,html,okLabel){
+  return new Promise(res=>{
+    const d=$('formDlg');$('formTitle').textContent=title;$('formBody').innerHTML=html;
+    const b=$('formBtns');b.innerHTML='';
+    const c=document.createElement('button');c.textContent='Cancel';c.onclick=()=>{d.close();res(false)};b.appendChild(c);
+    if(okLabel){const o=document.createElement('button');o.className='go';o.textContent=okLabel;o.onclick=()=>{d.close();res(true)};b.appendChild(o)}
+    else c.textContent='Close';
+    d.oncancel=()=>res(false);
+    d.showModal();
+  });
+}
+let toastT;
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1100)}
+
+/* ---------- roster helpers ---------- */
+function addPlayer(name){
+  name=(name||'').trim().slice(0,16);if(!name)return null;
+  const ex=L.roster.find(p=>!p.hidden&&p.name.toLowerCase()===name.toLowerCase());if(ex)return ex.id;
+  const p={id:newId(),name};L.roster.push(p);lsave();return p.id;
+}
+function fillSelect(sel,val,placeholder){
+  const act=L.roster.filter(p=>!p.hidden).sort((a,b)=>a.name.localeCompare(b.name));
+  sel.innerHTML=`<option value="">${placeholder||'Choose player…'}</option>`+act.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')+'<option value="new">＋ New player…</option>';
+  sel.value=act.some(p=>p.id===val)?val:'';
+  sel.onchange=()=>{if(sel.value==='new'){const id=addPlayer(prompt('New player name'));document.querySelectorAll('select.sel').forEach(s=>{if(s!==sel){const v=+s.value||'';fillSelect(s,v,s.dataset.ph)}});fillSelect(sel,id||'',sel.dataset.ph)}};
+}
+function bindSeg(root,obj,onChange){
+  root.querySelectorAll('.seg').forEach(seg=>{
+    const k=seg.dataset.k;
+    const paint=()=>seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v==String(obj[k])));
+    seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;obj[k]=isNaN(+v)?v:+v;paint();onChange&&onChange()});
+    paint();
+  });
+}
+
+/* ---------- league setup ---------- */
+renderers.lgSetup=()=>{
+  const s=L.set;
+  const paint=()=>{document.querySelectorAll('#lgSetup .dbl').forEach(e=>e.style.display=s.type==='doubles'?'':'none')};
+  bindSeg($('lgSetup'),s,()=>{paint();lsave()});
+  ['A','B'].forEach((S_,si)=>[0,1].forEach(i=>{const el=$('su'+S_+i);el.dataset.ph=i?'Partner…':'Choose player…';fillSelect(el,(s.sides[si]||[])[i],el.dataset.ph)}));
+  paint();
+};
+$('suStart').onclick=()=>{
+  const s=L.set,n=s.type==='doubles'?2:1;
+  const sides=['A','B'].map(S_=>[0,1].slice(0,n).map(i=>+$('su'+S_+i).value).filter(Boolean));
+  if(sides.some(x=>x.length<n))return alert(n===2?'Pick two players for each side.':'Pick a player for each side.');
+  if(new Set(sides.flat()).size!==sides.flat().length)return alert('Each player can only be in the match once.');
+  s.sides=sides;
+  startMatch({type:s.type,sides,toWin:s.toWin,limit:s.limit,first:s.first});
+};
+function startMatch(o){
+  L.cur={type:o.type,sides:o.sides,toWin:o.toWin,limit:o.limit,first:o.first,events:[],started:Date.now(),team:o.team||null,game:o.game??null};
+  lsave();show('lgGame');
+}
+
+/* ---------- engine: everything is replayed from the dart log ---------- */
+function replay(c){
+  const R={legWins:[0,0],legs:[],stats:{},over:false,winner:null,cork:false};
+  c.sides.flat().forEach(id=>R.stats[id]={marks:0,turns:0,darts:0,best:0,fives:0});
+  let g;
+  const newLeg=st=>{g={marks:[{},{}],score:[0,0],side:st,starter:st,sideTurns:[0,0],turns:0,cur:[],tm:0}};
+  newLeg(c.first);
+  const mk=(s,n)=>g.marks[s][n]||0;
+  const tot=s=>NUMS.reduce((t,n)=>t+Math.min(mk(s,n),3),0);
+  const thrower=s=>{const a=c.sides[s];return a[g.sideTurns[s]%a.length]};
+  const recTurn=()=>{const st=R.stats[thrower(g.side)];st.turns++;st.best=Math.max(st.best,g.tm);if(g.tm>=5)st.fives++};
+  const finish=(w,how)=>{
+    R.legs.push({winner:w,how,score:g.score.slice(),rounds:Math.ceil(g.turns/2),starter:g.starter});
+    R.legWins[w]++;
+    if(R.legWins[w]>=c.toWin){R.over=true;R.winner=w}else newLeg(1-w);
+  };
+  const endTurn=()=>{
+    recTurn();g.sideTurns[g.side]++;g.turns++;g.cur=[];g.tm=0;g.side=1-g.side;
+    if(c.limit&&g.turns>=c.limit*2){
+      const[a,b]=g.score;if(a!==b)return finish(a>b?0:1,`More points after ${c.limit} rounds`);
+      const ta=tot(0),tb=tot(1);if(ta!==tb)return finish(ta>tb?0:1,`Tied on points after ${c.limit} rounds, more marks`);
+      R.cork=true;
+    }
+  };
+  for(const ev of c.events){
+    if(R.over)break;
+    if(R.cork){if(ev.t==='cork'){R.cork=false;finish(ev.w,'Won the bull-off')}continue}
+    if(ev.t==='end'){endTurn();continue}
+    const s=g.side,o=1-s,st=R.stats[thrower(s)];
+    st.darts++;let cnt=0,pts=0;
+    if(ev.n)for(let i=0;i<ev.x;i++){
+      if(mk(s,ev.n)<3){g.marks[s][ev.n]=mk(s,ev.n)+1;cnt++}
+      else if(mk(o,ev.n)<3){g.score[s]+=ev.n;pts+=ev.n;cnt++}
+    }
+    st.marks+=cnt;g.tm+=cnt;g.cur.push({n:ev.n,x:ev.x,c:cnt,pts});
+    if(NUMS.every(n=>mk(s,n)>=3)&&g.score[s]>=g.score[o]){recTurn();g.turns++;finish(s,'Closed out');continue}
+    if(g.cur.length>=3)endTurn();
+  }
+  R.g=g;R.mk=mk;R.thrower=R.over?null:thrower(g.side);
+  return R;
+}
+
+/* ---------- league game UI ---------- */
+let LR=null;
+(function buildLgBoard(){
+  const b=$('lgBoard');
+  NUMS.forEach(n=>{
+    const r=document.createElement('div');r.className='lg-row';r.dataset.n=n;
+    const lab=n===25?['SB','DB','']:[n,'D'+n,'T'+n];
+    r.innerHTML=`<div class="lg-mk" data-s="0"></div><button data-x="1">${lab[0]}</button><button data-x="2">${lab[1]}</button><button data-x="3"${n===25?' class="hide"':''}>${lab[2]}</button><div class="lg-mk" data-s="1"></div>`;
+    r.querySelectorAll('button').forEach(btn=>btn.onclick=()=>lgDart(n,+btn.dataset.x,btn));
+    b.appendChild(r);
+  });
+})();
+renderers.lgGame=()=>{if(!L.cur)return show('home');lgRender();lgPrompt()};
+function lgRender(){
+  const c=L.cur;LR=replay(c);const R=LR,g=R.g;
+  [0,1].forEach(s=>{
+    const el=$('lgS'+s),side=c.sides[s];
+    const thr=!R.over&&g.side===s?R.thrower:null;
+    el.querySelector('.lg-names').innerHTML=side.map(id=>id===thr?`<b>${esc(pname(id))}</b>`:esc(pname(id))).join(' & ');
+    el.querySelector('.lg-score').textContent=g.score[s];
+    el.querySelector('.lg-legs').textContent=c.toWin>1?'●'.repeat(R.legWins[s])+'○'.repeat(c.toWin-R.legWins[s]):'';
+    el.classList.toggle('turn',!R.over&&g.side===s);
+  });
+  $('lgLeg').textContent=c.toWin>1?`Leg ${R.legs.length+(R.over?0:1)}`:'';
+  $('lgRd').textContent=`Rd ${Math.floor(g.turns/2)+1}${c.limit?'/'+c.limit:''}`;
+  const s=g.side,o=1-s;
+  $('lgBoard').querySelectorAll('.lg-row').forEach(r=>{
+    const n=+r.dataset.n;
+    r.querySelectorAll('.lg-mk').forEach(m=>{const v=Math.min(R.mk(+m.dataset.s,n),3);m.innerHTML=v?svg[v]:''});
+    const dead=R.mk(0,n)>=3&&R.mk(1,n)>=3;
+    r.classList.toggle('dead',dead);
+    r.classList.toggle('score',!dead&&R.mk(s,n)>=3);
+  });
+  const chips=[0,1,2].map(i=>{const d=g.cur[i];return d?`<span class="chip">${dartLbl(d)}</span>`:'<span class="chip e">·</span>'}).join('');
+  const st=R.thrower?R.stats[R.thrower]:null;
+  $('lgTurn').innerHTML=R.over?'<b>Match over</b>':`<b>${esc(pname(R.thrower))}</b>${chips}<span class="mpr">MPR ${fmtMpr(st.marks,st.turns+(g.cur.length?1:0))}</span>`;
+}
+function lgPush(ev,btn){
+  if(!L.cur)return;
+  const before=LR||replay(L.cur);
+  if(before.over||(before.cork&&ev.t!=='cork'))return lgPrompt();
+  if(ev.t==='cork'){L.cur.events.push(ev);lsave();lgRender();return lgPrompt(before.legs.length)}
+  const thr=before.thrower,prevMarks=before.stats[thr].marks,prevLegs=before.legs.length,prevSide=before.g.side,prevTurnMarks=before.g.tm;
+  const prevScore=before.g.score[prevSide];
+  L.cur.events.push(ev);lsave();lgRender();
+  const R=LR;
+  const gained=R.stats[thr].marks-prevMarks;
+  if(ev.t==='d'){
+    buzz(12);
+    const legChanged=R.legs.length>prevLegs;
+    const pts=legChanged?R.legs[R.legs.length-1].score[prevSide]-prevScore:R.g.score[prevSide]-prevScore;
+    if(pts>0&&btn){const p=document.createElement('span');p.className='pop';p.textContent='+'+pts;btn.appendChild(p);setTimeout(()=>p.remove(),700)}
+  }
+  const turnOver=R.legs.length>prevLegs||R.over||R.cork||R.g.side!==prevSide;
+  if(turnOver&&!R.over&&R.legs.length===prevLegs){const tm=prevTurnMarks+gained;toast(`${pname(thr)}: ${tm} mark${tm===1?'':'s'}`)}
+  lgPrompt(prevLegs);
+}
+const lgDart=(n,x,btn)=>lgPush({t:'d',n,x},btn);
+$('lgMiss').onclick=()=>lgPush({t:'d',n:0,x:0});
+$('lgEnd').onclick=()=>lgPush({t:'end'});
+$('lgUndo').onclick=lgUndo;
+function lgUndo(){if(!L.cur||!L.cur.events.length)return;L.cur.events.pop();lsave();lgRender()}
+
+let prompting=false;
+async function lgPrompt(prevLegs){
+  const c=L.cur,R=LR;if(!c||prompting)return;
+  if(R.over){
+    prompting=true;
+    const w=R.winner,lw=R.legWins;
+    const sub=(c.toWin>1?`Legs ${lw[w]}–${lw[1-w]}\n`:`${R.legs[0].how} · ${R.legs[0].score[w]}–${R.legs[0].score[1-w]}\n`)+c.sides.flat().map(id=>`${pname(id)}: MPR ${fmtMpr(R.stats[id].marks,R.stats[id].turns)}`).join('\n');
+    const btns=c.team?[{label:'Save to match card',go:true},'Undo last dart']:[{label:'Save match',go:true},'Save & rematch','Undo last dart'];
+    btns.cancel=false;
+    const i=await ask(`${sideName(c.sides[w])} win${c.sides[w].length>1?'':'s'}!`,sub,btns);
+    prompting=false;
+    if(btns[i]==='Undo last dart'||i<0)return lgUndo();
+    const rec=saveMatch();
+    if(c.team)return show('teamCard');
+    if(btns[i]==='Save & rematch')return startMatch({type:c.type,sides:c.sides,toWin:c.toWin,limit:c.limit,first:1-c.first});
+    return show('home');
+  }
+  if(R.cork){
+    prompting=true;
+    const btns=[{label:sideName(c.sides[0])},{label:sideName(c.sides[1])},'Undo last dart'];btns.cancel=false;
+    const i=await ask(`Dead even after ${c.limit} rounds`,'Same points and marks. Throw one dart each at the bull. Who won?',btns);
+    prompting=false;
+    if(i===0||i===1)return lgPush({t:'cork',w:i});
+    return lgUndo();
+  }
+  if(prevLegs!==undefined&&R.legs.length>prevLegs){
+    const lg=R.legs[R.legs.length-1],w=lg.winner;
+    prompting=true;
+    const btns=[{label:`Start leg ${R.legs.length+1}`,go:true},'Undo last dart'];btns.cancel=false;
+    const i=await ask(`Leg ${R.legs.length} to ${sideName(c.sides[w])}`,`${lg.how} · ${lg.score[w]}–${lg.score[1-w]}\nLegs ${R.legWins[0]}–${R.legWins[1]} · ${sideName(c.sides[1-w])} throws first`,btns);
+    prompting=false;
+    if(i===1)lgUndo();
+  }
+}
+$('lgMenu').onclick=async()=>{
+  const c=L.cur;
+  const opts=[c.team?'Back to match card':'Main menu','Abandon this match','Cancel'];
+  const i=await ask('Match menu','Your match is saved as you go, so you can leave and come back to it.',opts);
+  if(i===0)show(c.team?'teamCard':'home');
+  if(i===1&&confirm('Abandon this match? It will not be saved.')){L.cur=null;lsave();show(c.team?'teamCard':'home')}
+};
+function saveMatch(){
+  const c=L.cur,R=replay(c);
+  const rec={id:newId(),kind:'match',date:Date.now(),type:c.type,sides:c.sides,toWin:c.toWin,limit:c.limit,legs:R.legs,legWins:R.legWins,winner:R.winner,stats:R.stats,team:c.team,game:c.game};
+  L.history.push(rec);
+  if(c.team){const t=L.history.find(h=>h.id===c.team);if(t)t.games[c.game].matchId=rec.id}
+  L.cur=null;lsave();return rec;
+}
+
+/* ---------- team night ---------- */
+const teamRec=()=>L.team?L.history.find(h=>h.id===L.team&&!h.done):null;
+const matchById=id=>L.history.find(h=>h.id===id);
+function teamScore(t){const s=[0,0];t.games.forEach(g=>{const m=g.matchId&&matchById(g.matchId);if(m)s[m.winner]++});return s}
+renderers.teamSetup=()=>{
+  bindSeg($('teamSetup'),L.tset,lsave);
+  ['A','B'].forEach(S_=>[0,1,2,3].forEach(i=>{const el=$('t'+S_+i);el.dataset.ph=`Player ${i+1}…`;fillSelect(el,(L.tset['p'+S_]||[])[i],el.dataset.ph)}));
+  $('tnA').value=L.tset.nA||'';$('tnB').value=L.tset.nB||'';
+};
+$('tnStart').onclick=()=>{
+  const P=['A','B'].map(S_=>[0,1,2,3].map(i=>+$('t'+S_+i).value));
+  if(P.flat().some(v=>!v))return alert('Pick 4 players for each team.');
+  if(new Set(P.flat()).size!==8)return alert('Each player can only be listed once.');
+  const names=[$('tnA').value.trim()||'Home',$('tnB').value.trim()||'Away'];
+  Object.assign(L.tset,{pA:P[0],pB:P[1],nA:names[0]==='Home'?'':names[0],nB:names[1]==='Away'?'':names[1]});
+  const[A,B]=P;
+  const games=[0,1,2,3].map(i=>({type:'singles',sides:[[A[i]],[B[i]]],matchId:null}))
+    .concat([{type:'doubles',sides:[[A[0],A[1]],[B[0],B[1]]],matchId:null},{type:'doubles',sides:[[A[2],A[3]],[B[2],B[3]]],matchId:null}]);
+  const t={id:newId(),kind:'team',date:Date.now(),names,players:P,games,toWin:L.tset.toWin,limit:L.tset.limit,done:false};
+  L.history.push(t);L.team=t.id;lsave();show('teamCard');
+};
+renderers.teamCard=()=>{
+  const t=teamRec();if(!t)return show('home');
+  const sc=teamScore(t);
+  $('tcA').textContent=t.names[0];$('tcB').textContent=t.names[1];$('tcScore').textContent=`${sc[0]} – ${sc[1]}`;
+  const playing=L.cur&&L.cur.team===t.id?L.cur.game:null;
+  $('tcGames').innerHTML=t.games.map((g,i)=>{
+    const m=g.matchId&&matchById(g.matchId);
+    let right,res='';
+    if(m){const w=m.winner;res=`<div class="gr">${esc(sideName(m.sides[w]))} won${m.toWin>1?` ${m.legWins[w]}–${m.legWins[1-w]}`:''}</div>`;right=''}
+    else if(playing===i)right=`<button class="go" data-play="${i}">Resume</button>`;
+    else right=`<button data-edit="${i}">Edit</button><button class="go" data-play="${i}">Play</button>`;
+    return `<div class="game"><div class="gi"><div class="gt">Game ${i+1} · ${g.type}</div><div class="gp"><span style="color:var(--p1)">${esc(sideName(g.sides[0]))}</span> vs <span style="color:var(--p2)">${esc(sideName(g.sides[1]))}</span></div>${res}</div>${right}</div>`;
+  }).join('');
+  $('tcGames').querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>playTeamGame(+b.dataset.play));
+  $('tcGames').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editTeamGame(+b.dataset.edit));
+};
+async function playTeamGame(i){
+  const t=teamRec(),g=t.games[i];
+  if(L.cur&&L.cur.team===t.id&&L.cur.game===i)return show('lgGame');
+  if(L.cur){const k=await ask('Another match is in progress','Abandon it and start this game?',['Abandon & start',{label:'Cancel',go:true}]);if(k!==0)return;L.cur=null}
+  const f=await ask(`Game ${i+1}: who throws first?`,'Whoever won the cork.',[sideName(g.sides[0]),sideName(g.sides[1]),'Cancel']);
+  if(f!==0&&f!==1)return;
+  startMatch({type:g.type,sides:g.sides,toWin:t.toWin,limit:t.limit,first:f,team:t.id,game:i});
+}
+async function editTeamGame(i){
+  const t=teamRec(),g=t.games[i],n=g.type==='doubles'?2:1;
+  const opts=(team,v)=>t.players[team].map(id=>`<option value="${id}"${id===v?' selected':''}>${esc(pname(id))}</option>`).join('');
+  let html='';
+  [0,1].forEach(s=>{html+=`<div class="field"><label>${esc(t.names[s])}</label>`;for(let k=0;k<n;k++)html+=`<select class="sel" id="eg${s}${k}" style="background:var(--card2)">${opts(s,g.sides[s][k])}</select>`;html+='</div>'});
+  if(!await form(`Game ${i+1} players`,html,'Save'))return;
+  const sides=[0,1].map(s=>[...Array(n)].map((_,k)=>+$('eg'+s+k).value));
+  if(sides.some(x=>new Set(x).size!==x.length))return alert('Pick two different partners.');
+  g.sides=sides;lsave();renderers.teamCard();
+}
+function teamText(t){
+  const sc=teamScore(t);
+  return `${t.names[0]} ${sc[0]} – ${sc[1]} ${t.names[1]}\n`+t.games.map((g,i)=>{const m=g.matchId&&matchById(g.matchId);if(!m)return `G${i+1}: ${sideName(g.sides[0])} vs ${sideName(g.sides[1])} (not played)`;const w=m.winner;return `G${i+1}: ${sideName(m.sides[w])} def. ${sideName(m.sides[1-w])}${m.toWin>1?` ${m.legWins[w]}–${m.legWins[1-w]}`:''}`}).join('\n');
+}
+async function shareText(txt){try{if(navigator.share)await navigator.share({text:txt});else{await navigator.clipboard.writeText(txt);toast('Copied')}}catch(e){}}
+$('tcShare').onclick=()=>shareText(teamText(teamRec()));
+$('tcFinish').onclick=async()=>{
+  const t=teamRec(),left=t.games.filter(g=>!g.matchId).length;
+  if(left&&!confirm(`${left} game${left>1?'s':''} not played. Finish anyway?`))return;
+  if(L.cur&&L.cur.team===t.id)L.cur=null;
+  t.done=true;L.team=null;lsave();
+  const sc=teamScore(t);
+  const i=await ask(sc[0]===sc[1]?'Team night tied':`${t.names[sc[0]>sc[1]?0:1]} win the night!`,`${t.names[0]} ${sc[0]} – ${sc[1]} ${t.names[1]}`,['Share results',{label:'Done',go:true}]);
+  if(i===0)shareText(teamText(t));
+  show('home');
+};
+
+/* ---------- players & stats ---------- */
+function lifetime(){
+  const T={};
+  L.history.filter(h=>h.kind==='match').forEach(h=>h.sides.forEach((side,si)=>side.forEach(id=>{
+    const s=T[id]||(T[id]={m:0,mw:0,l:0,lw:0,marks:0,turns:0,best:0,fives:0});
+    s.m++;if(h.winner===si)s.mw++;s.l+=h.legs.length;s.lw+=h.legs.filter(x=>x.winner===si).length;
+    const st=h.stats[id];if(st){s.marks+=st.marks;s.turns+=st.turns;s.best=Math.max(s.best,st.best);s.fives+=st.fives}
+  })));
+  return T;
+}
+renderers.players=()=>{
+  const T=lifetime(),act=L.roster.filter(p=>!p.hidden);
+  act.sort((a,b)=>{const x=T[a.id],y=T[b.id];return (y&&y.turns?y.marks/y.turns:-1)-(x&&x.turns?x.marks/x.turns:-1)||a.name.localeCompare(b.name)});
+  $('playerList').innerHTML=act.length?act.map(p=>{const s=T[p.id];
+    const meta=s?`MPR <b style="color:var(--text)">${fmtMpr(s.marks,s.turns)}</b> · Matches ${s.mw}–${s.m-s.mw} · Legs ${s.lw}–${s.l-s.lw}<br>Best turn ${s.best} marks · 5+ mark rounds: ${s.fives}`:'No league matches yet';
+    return `<div class="item" data-p="${p.id}"><b>${esc(p.name)}</b><div class="meta">${meta}</div></div>`}).join('')
+    :'<div class="empty">No players yet. Add your league players above, or add them while setting up a match.</div>';
+  $('playerList').querySelectorAll('[data-p]').forEach(el=>el.onclick=async()=>{
+    const p=L.roster.find(x=>x.id===+el.dataset.p);
+    const i=await ask(p.name,'',['Rename','Remove from roster',{label:'Cancel',go:true}]);
+    if(i===0){const n=(prompt('New name',p.name)||'').trim().slice(0,16);if(n){p.name=n;lsave();renderers.players()}}
+    if(i===1&&confirm(`Remove ${p.name}? Their past matches stay in History.`)){p.hidden=true;lsave();renderers.players()}
+  });
+};
+$('addPlayer').onclick=()=>{if(addPlayer($('newPlayer').value)){$('newPlayer').value='';renderers.players()}};
+$('newPlayer').onkeydown=e=>{if(e.key==='Enter')$('addPlayer').click()};
+$('exportBtn').onclick=()=>{
+  const data=JSON.stringify({app:'cricket-scoreboard',v:1,saved:new Date().toISOString(),league:L,quick:S});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  a.download=`cricket-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();
+};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const d=JSON.parse(await f.text());if(d.app!=='cricket-scoreboard'||!d.league||!d.league.roster)throw 0;
+    if(!confirm(`Restore backup from ${(d.saved||'').slice(0,10)}? This replaces the players, stats and history on this phone.`))return;
+    L=d.league;lsave();if(d.quick){S=d.quick;save();render()}toast('Backup restored');renderers.players();
+  }catch(err){alert('That file is not a Cricket Scoreboard backup.')}
+};
+
+/* ---------- history ---------- */
+function fmtDate(t){return new Date(t).toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'})}
+renderers.history=()=>{
+  const items=L.history.filter(h=>h.kind==='team'||!h.team||!matchById(h.team)).slice().reverse();
+  $('histList').innerHTML=items.length?items.map(h=>{
+    if(h.kind==='team'){const sc=teamScore(h);return `<div class="item" data-h="${h.id}"><b>Team night: ${esc(h.names[0])} ${sc[0]} – ${sc[1]} ${esc(h.names[1])}</b><div class="meta">${fmtDate(h.date)}${h.done?'':' · in progress'}</div></div>`}
+    const w=h.winner;
+    return `<div class="item" data-h="${h.id}"><b>${esc(sideName(h.sides[w]))} def. ${esc(sideName(h.sides[1-w]))}${h.toWin>1?` ${h.legWins[w]}–${h.legWins[1-w]}`:''}</b><div class="meta">${fmtDate(h.date)} · ${h.type} · ${h.sides.flat().map(id=>`${esc(pname(id))} ${fmtMpr(h.stats[id].marks,h.stats[id].turns)}`).join(' · ')} MPR</div></div>`;
+  }).join(''):'<div class="empty">No league matches yet.</div>';
+  $('histList').querySelectorAll('[data-h]').forEach(el=>el.onclick=()=>histDetail(+el.dataset.h));
+};
+function matchTable(m){
+  return `<table class="stat"><tr><th>Player</th><th>MPR</th><th>Marks</th><th>Rds</th><th>Best</th><th>5+</th></tr>`+
+    m.sides.flat().map(id=>{const s=m.stats[id];return `<tr><td>${esc(pname(id))}</td><td>${fmtMpr(s.marks,s.turns)}</td><td>${s.marks}</td><td>${s.turns}</td><td>${s.best}</td><td>${s.fives}</td></tr>`}).join('')+'</table>'+
+    m.legs.map((l,i)=>`<div style="font-size:13px;color:var(--muted);margin-bottom:4px">Leg ${i+1}: ${esc(sideName(m.sides[l.winner]))} · ${l.score[0]}–${l.score[1]} · ${l.rounds} rds · ${esc(l.how)}</div>`).join('');
+}
+async function histDetail(id){
+  const h=matchById(id);let html,title;
+  if(h.kind==='team'){
+    const sc=teamScore(h);title=`${h.names[0]} ${sc[0]} – ${sc[1]} ${h.names[1]}`;
+    html=`<div style="color:var(--muted);font-size:13px;margin-bottom:8px">${fmtDate(h.date)}</div>`+h.games.map((g,i)=>{const m=g.matchId&&matchById(g.matchId);return `<div class="sect" style="margin-top:10px">Game ${i+1} · ${esc(sideName(g.sides[0]))} vs ${esc(sideName(g.sides[1]))}</div>`+(m?matchTable(m):'<div style="color:var(--muted)">Not played</div>')}).join('');
+  }else{
+    const w=h.winner;title=`${sideName(h.sides[w])} def. ${sideName(h.sides[1-w])}`;
+    html=`<div style="color:var(--muted);font-size:13px;margin-bottom:8px">${fmtDate(h.date)} · ${h.type}${h.toWin>1?` · legs ${h.legWins[w]}–${h.legWins[1-w]}`:''}</div>`+matchTable(h);
+  }
+  html+=`<button class="btn danger wide" id="delHist" style="margin-top:12px">Delete from history</button>`;
+  const p=form(title,html,null);
+  $('delHist').onclick=()=>{
+    if(!confirm('Delete this from history? Stats will be recalculated without it.'))return;
+    const ids=new Set([h.id]);if(h.kind==='team'){h.games.forEach(g=>g.matchId&&ids.add(g.matchId));if(L.team===h.id)L.team=null}
+    else if(h.team){const t=matchById(h.team);if(t)t.games.forEach(g=>{if(g.matchId===h.id)g.matchId=null})}
+    L.history=L.history.filter(x=>!ids.has(x.id));lsave();$('formDlg').close();renderers.history();
+  };
+  await p;
+}
+
+/* ---------- start-up ---------- */
+(function(){
+  let sc='home';try{sc=localStorage.getItem('cricket-screen')||'home'}catch(e){}
+  if(sc==='lgGame'&&!L.cur)sc='home';
+  if(sc==='teamCard'&&!teamRec())sc='home';
+  if(!['home','quick','lgGame','teamCard','players','history'].includes(sc))sc='home';
+  show(sc);
+})();
+
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
 </script>
 </body>
