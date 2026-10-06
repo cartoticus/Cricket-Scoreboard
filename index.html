@@ -22,7 +22,7 @@ body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) 10px en
 .pl.p1{color:var(--p1)}.pl.p2{color:var(--p2)}
 .pl .nm{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl .sc{font-size:44px;font-weight:800;color:var(--text);line-height:1.05;font-variant-numeric:tabular-nums}
-.pl .wn{font-size:12px;color:var(--muted)}
+.pl .wn{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mid{display:flex;flex-direction:column;justify-content:center;align-items:center;color:var(--muted);font-size:12px;gap:4px}
 .mid button{background:var(--card);border:0;color:var(--text);border-radius:10px;padding:8px 0;width:100%;font-size:13px;font-weight:600}
 .board{flex:1;display:grid;grid-template-rows:repeat(7,1fr);gap:6px;min-height:0;padding-bottom:6px}
@@ -67,6 +67,7 @@ dialog label{display:block;text-align:left;font-size:13px;color:var(--muted);mar
 .seg{display:flex;background:var(--card);border-radius:12px;padding:4px;gap:4px}
 .seg button{flex:1;border:0;background:transparent;color:var(--muted);padding:11px 4px;border-radius:9px;font-size:15px;font-weight:700}
 .seg button.on{background:var(--card2);color:var(--text)}
+.txt.bad{box-shadow:inset 0 0 0 2px #ef4444}
 .sel,.txt{width:100%;padding:12px;border-radius:12px;border:0;background:var(--card);color:var(--text);font-size:17px;margin-bottom:6px;user-select:text;-webkit-user-select:text}
 .sidecol{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sidecol h3{margin:0 0 6px;font-size:14px}
@@ -149,12 +150,30 @@ dialog label{display:block;text-align:left;font-size:13px;color:var(--muted);mar
   <div class="scroll">
     <div class="home-title"><h1>🎯 Cricket</h1><p>Darts scoreboard</p></div>
     <div id="resumeTiles"></div>
-    <button class="tile" id="goQuick"><b>Quick Play</b><span>Two players, tap the marks, play fast</span></button>
+    <button class="tile" id="goQuick"><b>Quick Play</b><span>1 vs 1 or 2 vs 2, tap the marks, play fast</span></button>
     <button class="tile" id="goLeague"><b>League Match</b><span>Singles or doubles, every dart entered, legs and MPR</span></button>
     <button class="tile" id="goTeam"><b>Team Night</b><span>4 vs 4 match card: 4 singles + 2 doubles</span></button>
     <button class="tile" id="goPlayers"><b>Players &amp; Stats</b><span>Roster, lifetime MPR, backup</span></button>
     <button class="tile" id="goHistory"><b>Match History</b><span>Past league matches and team nights</span></button>
   </div>
+</section>
+
+<section class="screen" id="quickSetup">
+  <div class="hdr"><button data-home>‹ Back</button><h1>Quick Play</h1></div>
+  <div class="scroll">
+    <div class="field"><label>Format</label><div class="seg" data-k="mode"><button data-v="1v1">1 vs 1</button><button data-v="2v2">2 vs 2</button></div></div>
+    <div class="field"><label>Names</label>
+      <div class="sidecol">
+        <div><h3 style="color:var(--p1)">Side A</h3><input class="txt qn" id="qa0" maxlength="16" list="rosterNames" autocomplete="off"><input class="txt qn q2" id="qa1" maxlength="16" list="rosterNames" autocomplete="off"></div>
+        <div><h3 style="color:var(--p2)">Side B</h3><input class="txt qn" id="qb0" maxlength="16" list="rosterNames" autocomplete="off"><input class="txt qn q2" id="qb1" maxlength="16" list="rosterNames" autocomplete="off"></div>
+      </div>
+      <p class="q2" style="color:var(--muted);font-size:13px;margin:6px 0 0">Partners take turns: A1, B1, A2, B2, and so on.</p>
+    </div>
+    <div class="field"><label>Throws first</label><div class="seg" data-k="first"><button data-v="0">Side A</button><button data-v="1">Side B</button></div></div>
+    <p id="qErr" style="color:#fca5a5;font-size:14px;margin:0 0 10px;min-height:1px"></p>
+    <button class="btn go wide" id="qStart">Start game</button>
+  </div>
+  <datalist id="rosterNames"></datalist>
 </section>
 
 <section class="screen" id="lgSetup">
@@ -240,20 +259,23 @@ dialog label{display:block;text-align:left;font-size:13px;color:var(--muted);mar
 <dialog id="namesDlg">
   <button id="homeBtn" style="width:100%;margin-bottom:14px">⌂ Main menu</button>
   <h2 style="font-size:20px;margin-bottom:12px">Settings</h2>
-  <label>Player 1</label><input id="n0" maxlength="16">
-  <label>Player 2</label><input id="n1" maxlength="16">
+  <button id="changePlayers" style="width:100%;margin-bottom:14px">Change players / 2 vs 2</button>
   <label>Round limit</label><select id="limitSel"><option value="0">Off</option><option value="15">15 rounds</option><option value="20">20 rounds</option><option value="25">25 rounds</option></select>
   <div class="btns"><button id="resetWins">Reset wins</button><button class="go" id="saveNames">Save</button></div>
 </dialog>
 
 <script>
 const KEY='cricket-v1', NUMS=[20,19,18,17,16,15,25];
-const fresh=()=>({marks:[{},{}],score:[0,0],turn:S?S.starter:0,darts:0,turns:0,stack:[],over:false});
+const fresh=()=>({marks:[{},{}],score:[0,0],turn:S?S.starter:0,darts:0,turns:0,st:[0,0],stack:[],over:false});
 let S=null;
 try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||!S.names){S={names:['Player 1','Player 2'],wins:[0,0],starter:0};Object.assign(S,fresh())}
 if(S.limit===undefined)S.limit=20;
 if(S.turns===undefined)S.turns=0;
+if(!S.players){S.players=[[S.names[0]],[S.names[1]]];S.mode='1v1';S.ready=!(S.names[0]==='Player 1'&&S.names[1]==='Player 2')}
+if(!S.st)S.st=[0,0];
+const qesc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const qThrower=p=>S.players[p][S.st[p]%S.players[p].length];
 const totalMarks=p=>NUMS.reduce((t,n)=>t+Math.min(m(p,n),3),0);
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=id=>document.getElementById(id);
@@ -279,9 +301,10 @@ function buildBoard(){
 function render(){
   [0,1].forEach(p=>{
     const el=$('pl'+p);
-    el.querySelector('.nm').textContent=S.names[p];
+    const team=S.players[p].length>1,up=qThrower(p);
+    el.querySelector('.nm').innerHTML=team?`<b>${qesc(up)}</b>`:qesc(S.names[p]);
     el.querySelector('.sc').textContent=S.score[p];
-    el.querySelector('.wn').textContent=`Wins: ${S.wins[p]}`;
+    el.querySelector('.wn').textContent=(team?`& ${S.players[p].find(n=>n!==up)} · `:'')+`Wins: ${S.wins[p]}`;
     el.classList.toggle('turn',S.turn===p&&!S.over);
   });
   $('board').querySelectorAll('.row').forEach(r=>{
@@ -319,7 +342,7 @@ function checkWin(){
 function showWin(p,how){
   S.over=true;S.winner=p;
   if(p>=0)S.wins[p]++;
-  $('winTitle').textContent=p>=0?`${S.names[p]} wins!`:'Dead even!';
+  $('winTitle').textContent=p>=0?`${S.names[p]} win${S.players[p].length>1?'':'s'}!`:'Dead even!';
   $('winSub').textContent=p>=0?`${how}\n${S.score[0]} – ${S.score[1]}  ·  Series ${S.wins[0]}–${S.wins[1]}`:`Same points and marks after ${S.limit} rounds. Settle it with one dart each at the bull.`;
   setTimeout(()=>$('winDlg').showModal(),250);
   buzz([40,60,40]);
@@ -328,8 +351,8 @@ function showWin(p,how){
 // Change thrower. Returns false if this ended the game on the round limit.
 function switchTo(p){
   if(S.turn===p)return true;
-  S.stack.push({sw:true,turn:S.turn,darts:S.darts,turns:S.turns});
-  S.turn=p;S.darts=0;S.turns++;
+  S.stack.push({sw:true,turn:S.turn,darts:S.darts,turns:S.turns,st:S.st.slice()});
+  S.st[S.turn]++;S.turn=p;S.darts=0;S.turns++;
   if(S.limit&&S.turns>=S.limit*2){endByRounds();save();render();return false}
   return true;
 }
@@ -345,7 +368,7 @@ function endByRounds(){
 function undo(){
   const l=S.stack.pop();if(!l)return;
   if(S.over){if(S.winner>=0)S.wins[S.winner]--;S.over=false}
-  if(l.sw){S.turn=l.turn;S.darts=l.darts;S.turns=l.turns}
+  if(l.sw){S.turn=l.turn;S.darts=l.darts;S.turns=l.turns;if(l.st)S.st=l.st}
   else{if(l.pts)S.score[l.p]-=l.pts;else S.marks[l.p][l.n]=m(l.p,l.n)-1;S.darts=l.darts}
   save();render();
 }
@@ -358,8 +381,8 @@ $('nextBtn').onclick=()=>{if(S.over)return;if(switchTo(1-S.turn)){save();render(
 $('newBtn').onclick=()=>{if(S.stack.length&&!S.over&&!confirm('Abandon this game and start over?'))return;newGame()};
 $('rematch').onclick=()=>{$('winDlg').close();newGame()};
 function newGame(){S.starter=1-S.starter;Object.assign(S,fresh());S.winner=undefined;save();render()}
-$('namesBtn').onclick=()=>{$('n0').value=S.names[0];$('n1').value=S.names[1];$('limitSel').value=S.limit;$('namesDlg').showModal()};
-$('saveNames').onclick=()=>{S.names=[$('n0').value.trim()||'Player 1',$('n1').value.trim()||'Player 2'];S.limit=+$('limitSel').value;if(S.limit&&!S.over&&S.turns>=S.limit*2)endByRounds();save();render();$('namesDlg').close()};
+$('namesBtn').onclick=()=>{$('limitSel').value=S.limit;$('namesDlg').showModal()};
+$('saveNames').onclick=()=>{S.limit=+$('limitSel').value;if(S.limit&&!S.over&&S.turns>=S.limit*2)endByRounds();save();render();$('namesDlg').close()};
 $('resetWins').onclick=()=>{if(confirm('Reset the win tally?')){S.wins=[0,0];save();render()}};
 [0,1].forEach(p=>$('pl'+p).onclick=()=>{if(!S.over&&switchTo(p)){save();render()}});
 
@@ -387,7 +410,37 @@ function show(id){
 }
 document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('home'));
 $('homeBtn').onclick=()=>{$('namesDlg').close();show('home')};
-$('goQuick').onclick=()=>show('quick');
+$('goQuick').onclick=()=>show('quickSetup');
+$('changePlayers').onclick=()=>{$('namesDlg').close();show('quickSetup')};
+const QS={mode:S.mode||'1v1',first:S.starter||0};
+renderers.quickSetup=()=>{
+  QS.mode=S.mode||'1v1';
+  const paint=()=>{document.querySelectorAll('#quickSetup .q2').forEach(e=>e.style.display=QS.mode==='2v2'?'':'none');
+    $('qa0').placeholder=QS.mode==='2v2'?'Player 1':'Name';$('qb0').placeholder=QS.mode==='2v2'?'Player 1':'Name';
+    $('qa1').placeholder='Partner';$('qb1').placeholder='Partner';$('qErr').textContent='';document.querySelectorAll('.qn').forEach(i=>i.classList.remove('bad'))};
+  bindSeg($('quickSetup'),QS,paint);
+  const P=S.ready?S.players:[[],[]];
+  $('qa0').value=P[0][0]||'';$('qa1').value=P[0][1]||'';$('qb0').value=P[1][0]||'';$('qb1').value=P[1][1]||'';
+  $('rosterNames').innerHTML=L.roster.filter(p=>!p.hidden).map(p=>`<option value="${esc(p.name)}">`).join('');
+  paint();
+};
+document.querySelectorAll('.qn').forEach(i=>i.oninput=()=>i.classList.remove('bad'));
+$('qStart').onclick=()=>{
+  const n=QS.mode==='2v2'?2:1;
+  const ids=[['qa0','qa1'],['qb0','qb1']].map(s=>s.slice(0,n));
+  let missing=false;
+  ids.flat().forEach(id=>{const e=$(id);e.value=e.value.trim();const bad=!e.value;e.classList.toggle('bad',bad);if(bad)missing=true});
+  if(missing){$('qErr').textContent='Enter a name for every player.';return}
+  const players=ids.map(s=>s.map(id=>$(id).value));
+  const low=players.flat().map(x=>x.toLowerCase());
+  if(new Set(low).size!==low.length){$('qErr').textContent='Every player needs a different name.';return}
+  if(S.ready&&S.stack.length&&!S.over&&!confirm('A quick game is in progress. Abandon it and start a new one?'))return;
+  const same=JSON.stringify(players)===JSON.stringify(S.players);
+  S.players=players;S.mode=QS.mode;S.names=players.map(p=>p.join(' & '));
+  if(!same||!S.ready)S.wins=[0,0];
+  S.starter=QS.first;S.ready=true;Object.assign(S,fresh());S.winner=undefined;
+  save();render();show('quick');
+};
 $('goLeague').onclick=()=>show('lgSetup');
 $('goTeam').onclick=()=>{if(L.team&&!confirm('A team night is already in progress. Start a new one? The current one stays in History.'))return;show('teamSetup')};
 $('goPlayers').onclick=()=>show('players');
@@ -398,7 +451,9 @@ renderers.home=()=>{
   if(L.cur){const c=L.cur;h+=`<button class="tile resume" id="resLg"><b>▶ Resume match</b><span>${esc(sideName(c.sides[0]))} vs ${esc(sideName(c.sides[1]))}</span></button>`}
   const t=teamRec();
   if(t){const sc=teamScore(t);h+=`<button class="tile resume" id="resTeam"><b>▶ Team night in progress</b><span>${esc(t.names[0])} ${sc[0]} – ${sc[1]} ${esc(t.names[1])}</span></button>`}
+  if(S.ready&&S.stack.length&&!S.over)h=`<button class="tile resume" id="resQuick"><b>▶ Resume quick game</b><span>${esc(S.names[0])} vs ${esc(S.names[1])}</span></button>`+h;
   $('resumeTiles').innerHTML=h;
+  if($('resQuick'))$('resQuick').onclick=()=>show('quick');
   if($('resLg'))$('resLg').onclick=()=>show('lgGame');
   if($('resTeam'))$('resTeam').onclick=()=>show('teamCard');
 };
@@ -776,6 +831,7 @@ async function histDetail(id){
 (function(){
   let sc='home';try{sc=localStorage.getItem('cricket-screen')||'home'}catch(e){}
   if(sc==='lgGame'&&!L.cur)sc='home';
+  if(sc==='quick'&&!S.ready)sc='home';
   if(sc==='teamCard'&&!teamRec())sc='home';
   if(!['home','quick','lgGame','teamCard','players','history'].includes(sc))sc='home';
   show(sc);
